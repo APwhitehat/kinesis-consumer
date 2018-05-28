@@ -6,22 +6,14 @@ import (
 	"time"
 )
 
-type resultCmd interface {
-	Result() (string, error)
-}
-
-type errCmd interface {
-	Err() error
-}
-
 // Client defines the DB functionality needed for checkpoint
 type Client interface {
 	// Get a value in database
-	Get(key string) resultCmd
+	Get(key string) (string, error)
 	// Set a value in database
-	Set(key string, value string, ttl time.Duration) errCmd
+	Set(key string, value string, ttl time.Duration) error
 	// Ping the database to check it's working
-	Ping() resultCmd
+	Ping() error
 }
 
 // New returns a checkpoint that uses Redis for underlying storage
@@ -31,7 +23,7 @@ func New(appName string, client Client) (*Checkpoint, error) {
 	}
 
 	// verify we can ping redis server
-	_, err := client.Ping().Result()
+	err := client.Ping()
 	if err != nil {
 		return nil, err
 	}
@@ -50,7 +42,7 @@ type Checkpoint struct {
 
 // Get fetches the checkpoint for a particular Shard.
 func (c *Checkpoint) Get(streamName, shardID string) (string, error) {
-	val, _ := c.client.Get(c.key(streamName, shardID)).Result()
+	val, _ := c.client.Get(c.key(streamName, shardID))
 	return val, nil
 }
 
@@ -60,7 +52,7 @@ func (c *Checkpoint) Set(streamName, shardID, sequenceNumber string) error {
 	if sequenceNumber == "" {
 		return fmt.Errorf("sequence number should not be empty")
 	}
-	err := c.client.Set(c.key(streamName, shardID), sequenceNumber, 0).Err()
+	err := c.client.Set(c.key(streamName, shardID), sequenceNumber, 0)
 	if err != nil {
 		return err
 	}
