@@ -109,6 +109,11 @@ type Consumer struct {
 	counter    Counter
 }
 
+func (c *Consumer) GetShardIDs() ([]string, error) {
+	shardIDs, err := c.client.GetShardIDs(c.streamName)
+	return shardIDs, err
+}
+
 // Scan scans each of the shards of the stream, calls the callback
 // func with each of the kinesis records.
 func (c *Consumer) Scan(ctx context.Context, fn func(*Record) bool) error {
